@@ -35,15 +35,39 @@ protected:
 Graph GraphTest::graph(9);
 
 TEST(Graph, IgnoreComment) {
-    istringstream input("c comentario\np hola\nc comentario\n");
-    EXPECT_EQ(filterComments(input).str(),"p hola\n");
+    const string input_str = "c comment1\nc comment2\n"
+        "p edge 9 14\ne 1 2\ne 1 3\ne 2 3\n"
+        "e 2 4\ne 2 8\n e 2 9\ne 3 4\ne 4 6\n"
+        "e 4 8\ne 4 9\ne 5 7\ne 6 7\ne 6 8\ne 7 9\n";
+    const string result_str = "p edge 9 14\ne 1 2\ne 1 3\ne 2 3\n"
+        "e 2 4\ne 2 8\n e 2 9\ne 3 4\ne 4 6\n"
+        "e 4 8\ne 4 9\ne 5 7\ne 6 7\ne 6 8\ne 7 9\n";
+    istringstream input(input_str);
+    EXPECT_EQ((*filterComments(input)).str(),result_str);
 }
 
 TEST_F(GraphTest, BuildGraph) {
-    istringstream input("p edge 9 14\ne 1 2\ne 1 3\ne 2 3\ne 2 4\ne 2 8\ne 2 9\ne 3 4\ne 4 6\ne 4 8\ne 4 9\ne 5 7\ne 6 7\ne 6 8\ne 7 9\n");
-    Graph dummy(9);
+    const string input_str = "p edge 9 14\n" 
+        "e 1 2\ne 1 3\ne 2 3\ne 2 4\ne 2 8\n" 
+        "e 2 9\ne 3 4\ne 4 6\ne 4 8\ne 4 9\n" 
+        "e 5 7\ne 6 7\ne 6 8\ne 7 9\n";
+    istringstream input(input_str);
+    Graph dummy;
     buildGraph(input, dummy);
     EXPECT_EQ(graph.adjacentsList, dummy.adjacentsList);
+}
+
+TEST_F(GraphTest, LoadGraph) {
+    const string input_str = "c comment1\nc comment2\n"
+        "p edge 9 14\ne 1 2\ne 1 3\ne 2 3\n"
+        "e 2 4\ne 2 8\ne 2 9\ne 3 4\ne 4 6\n"
+        "e 4 8\ne 4 9\ne 5 7\ne 6 7\ne 6 8\ne 7 9\n";
+    istringstream input(input_str);
+
+    Graph dummy; 
+    buildGraph(*filterComments(input), dummy); 
+    EXPECT_EQ(graph.adjacentsList, dummy.adjacentsList);
+
 }
 
 TEST(Graph, Adjacents) {
@@ -72,7 +96,7 @@ TEST(Graph, ColorVertex) {
         nodes.push_back(n);
     }
 
-    graph.colorVertex(0, 0, nodes, colored);
+    graph.colorVertexDSATUR(0, 0, nodes, colored);
 
     vector< TNode > result;
     TNode n;

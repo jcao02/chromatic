@@ -19,18 +19,14 @@ short partialSolution[10000];
 short currentNColors;
 short bestSolution;
 
-int main(int argc, char const *argv[]) {
-    return 0;
-}
-
-stringstream filterComments(istringstream& input) {
-    string line;
-    stringstream result;
+istringstream *filterComments(istringstream& input) {
+    string line, result_str;
     while(getline(input, line)) {
         if (line[0] != 'c') {
-            result << line << endl;
+            result_str += line + "\n";
         }
     }
+    istringstream *result = new istringstream(result_str);
     return result;
 }
 
@@ -42,6 +38,8 @@ void buildGraph(istringstream& input, Graph& graph) {
 
     getline(input, line);
     sscanf(line.c_str(), "p %s %d %d", name, &nVertex, &nEdges);
+
+    graph = Graph(nVertex); 
 
     while(getline(input, line)) {
         sscanf(line.c_str(), "e %d %d", &first, &second);
@@ -85,7 +83,6 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
     vector< short > colored(nVertex, -1);
     vector< short > rank;
     short nColor = 1;
-    int degreePos = 1;
 
     for (auto& u : usable) { u.reset(); }
 
@@ -105,7 +102,7 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
     const TNode& p = nodes.back();
     nodes.pop_back();
 
-    colorVertex(p.vertex, 0, nodes, colored);
+    colorVertexDSATUR(p.vertex, 0, nodes, colored);
     rank.push_back(p.vertex);
 
     while(! nodes.empty()) {
@@ -117,7 +114,7 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
 
         nColor = max(nColor, (short) (use + 1));
 
-        colorVertex(current.vertex, use, nodes, colored);
+        colorVertexDSATUR(current.vertex, use, nodes, colored);
         rank.push_back(current.vertex);
 
         sort(nodes.begin(), nodes.end());
@@ -126,7 +123,7 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
     return make_tuple(nColor, rank, colored);
 }
 
-bool Graph::colorVertex(short vertex, short color, vector< TNode >& nodes
+bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes
                        , vector< short >& colored) {
     colored[vertex] = color;
 
