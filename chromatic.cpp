@@ -11,12 +11,12 @@ using namespace std;
 bitset<10000> usable[10000];        // Usable color, given a node
 vector< short > coloring_rank;      // Colored coloring_ranks
 short cliqueSize;
-bitset<10000> labels[10000];        // Labels on each node
+bitset<10000> labels;               // Labels on each node
 
 short partialSolution[10000];
 short currentNColors;
 short bestSolution = 10000;
-short lastNColor; 
+vector< short > lastNColor(10000, 0); 
 
 TNode popMax(vector< TNode >& nodes);
 void clearUsable();
@@ -140,7 +140,7 @@ inline bool operator<(const TNode& lhs,
 bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes) {
     colored_[vertex] = color;
 
-    for (auto& adj : this->getAdjacents(vertex)) {
+    for (auto adj : this->getAdjacents(vertex)) {
         if (colored_[adj] == -1 && !usable[adj].test(color)) {
 
             usable[adj].set(color);
@@ -156,7 +156,7 @@ bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes)
 
 bool Graph::colorVertex(short vertex, short color) {
     colored_[vertex] = color; 
-    for (auto& adj : this->getAdjacents(vertex)) {
+    for (auto adj : this->getAdjacents(vertex)) {
         if (usable[adj].test(color)) {
             usable[adj].set(color, 0);
         }
@@ -165,11 +165,12 @@ bool Graph::colorVertex(short vertex, short color) {
     return true;
 }
 
+// TODO: need to return blocked currents (try to make it k-indexed)
 pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
     short preventions = 0, blockings = 0; 
-    for (auto& adj : this->getAdjacents(vertex)) {
+    for (auto adj : this->getAdjacents(vertex)) {
 
-        if (usable[adj].test(color)) {
+        if (colored_[adj] == -1 && usable[adj].test(color)) {
             ++preventions;
             if (usable[adj].count() == 1) {
                 ++blockings; 
@@ -179,20 +180,115 @@ pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
     return make_pair(preventions, blockings); 
 }
 
-void Graph::determineUsables(short vertex) {
-    short nColor = min(bestSolution - 1, lastNColor + 1);
+void Graph::determineUsables(short current) {
+    short vertex = coloring_rank[current];
+    short lastVertex = coloring_rank[current - 1]; 
+    short nColor = min(bestSolution - 1, lastNColor[lastVertex] + 1);
 
     // TODO: Can be improved to bitwise operations
     for (int i = 0; i < nColor; ++i) {
         usable[vertex].set(i); 
     }
 
-    for (auto& adj: this->getAdjacents(vertex)) {
+    for (auto adj: this->getAdjacents(vertex)) {
         short color = colored_[adj]; 
         if (color != -1) {
             usable[vertex].reset(color); 
         }
     }
+}
+
+
+// TODO : -> 
+// Removes the current color of the vertex from usables for that vertex
+void Graph::removeOwnColor(short vertex) {
+    short color = colored_[vertex]; 
+    usable[vertex].reset(color); 
+}
+// Gets the color with the less of blockings and preventions
+short Graph::getBestColor(short vertex) {
+    pair<short, short> min(10000, 10000); 
+    short color = -1; 
+
+    for (int i = 0; i < bestSolution - 1; ++i) {
+        const pair<short, short>& pb =  this->getBlockingsAndPreventions(vertex, i); 
+        if ((pb.second < min.second) || 
+                (pb.second == min.second && pb.first < min.first))  {
+            min   = pb; 
+            color = i; 
+        }
+    }
+
+    return color; 
+}
+// Labels the coloring_rank[current] according to the paper's constraints
+void Graph::label(short current) {
+
+    short vertex = coloring_rank[current]; 
+    const vector< short >& adjs = this->getAdjacents(vertex); 
+
+    for (auto adj : adjs) {
+
+        auto it = find(coloring_rank.begin(), coloring_rank.begin() + current, adj);
+        if (it != coloring_rank.begin() + current) {
+            auto pos = distance(coloring_rank.begin(), it); 
+
+            short color = colored_[adj]; 
+            bool wasFirst = true; 
+            for (; wasFirst && pos >= 0; --pos) {
+                short tmpVertex = coloring_rank[pos]; 
+                if (tmpVertex != adj && colored_[tmpVertex] == color && 
+                        find(adjs.begin(), adjs.end(), tmpVertex) != adjs.end()) {
+                    wasFirst = false; 
+                }
+            }
+
+            if (wasFirst) {
+                labels.set(adj); 
+            }
+        }
+    }
+}
+short Graph::findBestSolutionAndRemoveLabels() {
+
+    short pos = 0; 
+
+    while (pos < nVertex_) {
+        short vertex = coloring_rank[pos]; 
+        if (colored_[vertex] == bestSolution - 1) {
+            break;
+        }
+        ++pos; 
+    }
+
+    // Unlabel following vertices in ranks
+    for (int i = pos; i < nVertex_; ++i) {
+        short vertex = coloring_rank[i]; 
+        if (labels.test(vertex)) {
+            labels.reset(vertex); 
+        }
+    }
+
+    return pos; 
+}
+// Determine the right-est vertex among the labeled vertices
+short Graph::determineDeepestLabeled() {
+    short pos = nVertex_ - 1; 
+
+    while (pos >= 0) {
+        short vertex = coloring_rank[pos]; 
+        if (labels.test(vertex)) {
+            break; 
+        }
+        --pos; 
+    }
+
+    return pos; 
+}
+
+
+void Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
+
 }
 
 
@@ -203,6 +299,7 @@ void clearUsable() {
 void clear() {
     clearUsable(); 
     coloring_rank.clear(); 
+    labels.reset(); 
 }
 
 TNode popMax(vector< TNode >& nodes) {

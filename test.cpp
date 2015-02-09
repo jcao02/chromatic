@@ -29,12 +29,19 @@ protected:
 
     static void TearDownTestCase() {}
 
+    virtual void SetUp() {
+
+        clear(); 
+        graph.clear(); 
+    
+    }
+
     static Graph graph;
 };
 
 Graph GraphTest::graph(9);
 
-TEST(Graph, IgnoreComment) {
+TEST_F(GraphTest, IgnoreComment) {
     const string input_str = "c comment1\nc comment2\n"
         "p edge 9 14\ne 1 2\ne 1 3\ne 2 3\n"
         "e 2 4\ne 2 8\n e 2 9\ne 3 4\ne 4 6\n"
@@ -87,7 +94,6 @@ TEST_F(GraphTest, ColorVertex) {
 TEST_F(GraphTest, BlockingsAndPrevention) {
     // 2 prevention (for vertex 1 and vertex 0)
     // 1 blocking (for vertex 0)
-    clear(); 
 
     usable[0].set(0); 
     usable[1].set(0); 
@@ -110,8 +116,8 @@ TEST_F(GraphTest, DetermineUsable) {
     // 8 with color 1
     // lastNColor = 2
     // bestSolution = 6
-    clear(); 
-    graph.clear(); 
+
+    coloring_rank = { 2, 3 };
 
     graph.colored_[1] = 0; 
     graph.colored_[2] = 1; 
@@ -119,10 +125,10 @@ TEST_F(GraphTest, DetermineUsable) {
     graph.colored_[7] = 1; 
     graph.colored_[8] = 1; 
 
-    lastNColor = 2;
+    lastNColor[2] = 2;
     bestSolution = 6; 
 
-    graph.determineUsables(3); 
+    graph.determineUsables(1); 
 
     bitset<3> result(string("100")); 
 
@@ -133,13 +139,12 @@ TEST_F(GraphTest, DetermineUsable_All) {
     // Determine usables of vertex 3
     // lastNColor = 2
     // bestSolution = 6
-    clear(); 
-    graph.clear(); 
 
-    lastNColor = 2;
+    coloring_rank = { 2, 3 };
+    lastNColor[2] = 2;
     bestSolution = 6; 
 
-    graph.determineUsables(3); 
+    graph.determineUsables(1); 
 
     bitset<3> result(string("111")); 
 
@@ -156,8 +161,8 @@ TEST_F(GraphTest, DetermineUsable_None) {
     // 8 with color 0
     // lastNColor = 2
     // bestSolution = 2
-    clear(); 
-    graph.clear(); 
+
+    coloring_rank = { 2, 3 };
 
     graph.colored_[1] = 0; 
     graph.colored_[2] = 0; 
@@ -165,10 +170,10 @@ TEST_F(GraphTest, DetermineUsable_None) {
     graph.colored_[7] = 0; 
     graph.colored_[8] = 0; 
 
-    lastNColor = 2;
+    lastNColor[2] = 1;
     bestSolution = 2; 
 
-    graph.determineUsables(3); 
+    graph.determineUsables(1); 
 
     bitset<3> result(string("000")); 
 
@@ -176,7 +181,7 @@ TEST_F(GraphTest, DetermineUsable_None) {
 }
 
 
-TEST(Graph, Adjacents) {
+TEST_F(GraphTest, Adjacents) {
     Graph graph(3);
     graph.addEdge(0,1);
     graph.addEdge(0,2);
@@ -186,7 +191,7 @@ TEST(Graph, Adjacents) {
     EXPECT_EQ(result, dummy);
 }
 
-TEST(Graph, ColorVertexDSATUR_3V2E) {
+TEST_F(GraphTest, ColorVertexDSATUR_3V2E) {
     Graph graph(3);
     graph.addEdge(0,1);
     graph.addEdge(0,2);
@@ -211,7 +216,7 @@ TEST(Graph, ColorVertexDSATUR_3V2E) {
     EXPECT_EQ(result, nodes);
 }
 
-TEST(Graph, ColorVertexDSATUR_4V5E) {
+TEST_F(GraphTest, ColorVertexDSATUR_4V5E) {
     Graph graph(4);
     graph.addEdge(0,1);
     graph.addEdge(0,2);
@@ -219,7 +224,6 @@ TEST(Graph, ColorVertexDSATUR_4V5E) {
     graph.addEdge(1,3);
     graph.addEdge(2,3);
 
-    clear(); 
     vector< TNode > nodes;
     vector< short > colored(graph.nVertex_, -1);
 
@@ -244,11 +248,9 @@ TEST(Graph, ColorVertexDSATUR_4V5E) {
 
 
 
-TEST(Graph, DSATUR_2V1E) {
+TEST_F(GraphTest, DSATUR_2V1E) {
     Graph graph(2);
     graph.addEdge(0,1);
-
-    clear(); 
 
     vector< short > result = {0, 1};
     short dummy = graph.dsatur();
@@ -257,12 +259,10 @@ TEST(Graph, DSATUR_2V1E) {
     EXPECT_EQ(result, coloring_rank);
 }
 
-TEST(Graph, DSATUR_3V2E) {
+TEST_F(GraphTest, DSATUR_3V2E) {
     Graph graph(3);
     graph.addEdge(0,1);
     graph.addEdge(0,2);
-
-    clear(); 
 
     vector< short > result = {0, 1, 2};
     short dummy = graph.dsatur();
@@ -271,10 +271,8 @@ TEST(Graph, DSATUR_3V2E) {
     EXPECT_EQ(result, coloring_rank);
 }
 
-TEST(Graph, DSATUR_2V0E) {
+TEST_F(GraphTest, DSATUR_2V0E) {
     Graph graph(2);
-
-    clear(); 
 
     vector< short > result = {0, 1};
     short dummy = graph.dsatur();
@@ -283,15 +281,13 @@ TEST(Graph, DSATUR_2V0E) {
     EXPECT_EQ(result, coloring_rank);
 }
 
-TEST(Graph, DSATUR_4V5E) {
+TEST_F(GraphTest, DSATUR_4V5E) {
     Graph graph(4);
     graph.addEdge(0,1);
     graph.addEdge(0,2);
     graph.addEdge(1,2);
     graph.addEdge(1,3);
     graph.addEdge(2,3);
-
-    clear(); 
 
     vector< short > result = {1, 2, 0, 3};
     vector< short > colored = {2, 0, 1, 2};
@@ -303,7 +299,6 @@ TEST(Graph, DSATUR_4V5E) {
 }
 
 TEST_F(GraphTest, DSATUR_test) {
-    graph.clear(); 
     short dummy = graph.dsatur(); 
 
 
@@ -317,14 +312,92 @@ TEST_F(GraphTest, DSATUR_test) {
 }
 
 TEST_F(GraphTest, DetermineCliqueSize) {
-    graph.clear(); 
     graph.dsatur(); 
 
     graph.determineCliqueSize(); 
     EXPECT_EQ(3, cliqueSize); 
 }
 
+TEST_F(GraphTest, LabelVerticesAll) {
+    Graph graph(3);
 
+    graph.addEdge(0,1); 
+    graph.addEdge(0,2); 
+
+    coloring_rank = { 1, 2, 0 };
+
+    graph.colored_ = { -1, 0, 1 };
+
+    graph.label(2);  // Labeling vertex 0
+
+    EXPECT_TRUE(labels.test(1));
+    EXPECT_TRUE(labels.test(2));
+
+    EXPECT_FALSE(labels.test(0));
+}
+
+TEST_F(GraphTest, LabelVerticesSome) {
+    Graph graph(3);
+
+    graph.addEdge(0,1); 
+    graph.addEdge(0,2); 
+
+    coloring_rank = {1, 2, 0};
+
+    graph.colored_ = {-1, 0, 0};
+
+    graph.label(2);  // Labeling vertex 0
+
+    EXPECT_TRUE(labels.test(1));
+
+    EXPECT_FALSE(labels.test(2));
+    EXPECT_FALSE(labels.test(0));
+}
+
+TEST_F(GraphTest, LabelVerticesOutOfRank) {
+    Graph graph(3);
+
+    graph.addEdge(0,1); 
+    graph.addEdge(0,2); 
+
+    coloring_rank = {1, 0, 2};
+
+    graph.colored_ = {-1, 0, -1};
+
+    graph.label(1);  // Labeling vertex 0
+
+    EXPECT_TRUE(labels.test(1));
+
+    EXPECT_FALSE(labels.test(2));
+    EXPECT_FALSE(labels.test(0));
+}
+
+TEST_F(GraphTest, UnlabelFromBestColored) {
+    Graph graph(6);
+
+    bestSolution = 3; 
+
+    coloring_rank = {3, 0, 2, 1, 5, 4};
+
+    graph.colored_ = {-1, 0, 2, 0, 0, 0};
+
+
+    for (int i = 0; i < 6; ++i) {
+        labels.set(i); 
+    }
+
+    short dummy = graph.findBestSolutionAndRemoveLabels(); 
+
+    EXPECT_EQ(2, dummy); 
+
+    EXPECT_TRUE(labels.test(0));
+    EXPECT_TRUE(labels.test(3));
+
+    EXPECT_FALSE(labels.test(2));
+    EXPECT_FALSE(labels.test(1));
+    EXPECT_FALSE(labels.test(4));
+    EXPECT_FALSE(labels.test(5));
+}
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
