@@ -20,10 +20,13 @@ include_directories (
 
 
 #add_library( common SHARED  ) 
+add_library( common SHARED chromatic.cpp  ) 
 
 #add_executable ( chromatic chromatic.cpp ) 
 #target_link_libraries ( chromatic common ) 
 
+add_executable(chromatic chromatic.cpp)
+
 add_executable(test test.cpp)
-target_link_libraries(test gtest)
+target_link_libraries(test gtest common)
 add_custom_target(run_tests test --gtest_output=xml ) 
