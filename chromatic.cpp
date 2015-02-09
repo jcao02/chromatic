@@ -4,21 +4,22 @@
 #include <string>                   // string
 #include <new>                      // bad_alloc
 #include <queue>                    // queue
-#include <tuple>                    // tuple
 #include "chromatic.hpp"
 
 using namespace std;
 
 bitset<10000> usable[10000];        // Usable color, given a node
+vector< short > coloring_rank;      // Colored coloring_ranks
 bitset<10000> clique;               // Clique returned by the algorithm ran before
 short cliqueSize;
 bitset<10000> labels[10000];        // Labels on each node
 
 short partialSolution[10000];
 short currentNColors;
-short bestSolution;
+short bestSolution = 10000;
 
 TNode popMax(vector< TNode >& nodes);
+void clearUsable();
 
 istringstream *filterComments(istringstream& input) {
     string line, result_str;
@@ -52,35 +53,34 @@ void buildGraph(istringstream& input, Graph& graph) {
 }
 
 Graph::Graph(short nVertex) {
-    this->nVertex = nVertex;
+    nVertex_ = nVertex;
+    colored_ = vector< short >(nVertex, -1); 
 }
 
 void Graph::addEdge(short first, short second) {
-    if (first < nVertex && second < nVertex) {
+    if (first < nVertex_ && second < nVertex_) {
         adjacentsList[first].push_back(second);
         adjacentsList[second].push_back(first);
     }
 }
 
 vector< short > Graph::getAdjacents(short vertex) {
-    if (vertex < nVertex) {
+    if (vertex < nVertex_) {
         return adjacentsList[vertex];
     } else {
         return vector< short >();
     }
 }
 
-tuple<short, vector<short>, vector<short> > Graph::dsatur() {
+short Graph::dsatur() {
     vector< TNode > nodes;
-    vector< short > colored(nVertex, -1);
-    vector< short > rank;
     short nColor = 1;
 
 
-    rank.reserve(nVertex);
-    nodes.reserve(nVertex);
+    coloring_rank.reserve(nVertex_);
+    nodes.reserve(nVertex_);
 
-    for (int i = 0; i < nVertex; ++i) {
+    for (int i = 0; i < nVertex_; ++i) {
         TNode n;
         n.degree = adjacentsList[i].size();
         n.dsat = 0;
@@ -91,8 +91,8 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
 
     const TNode& p = popMax(nodes); 
 
-    colorVertexDSATUR(p.vertex, 0, nodes, colored);
-    rank.push_back(p.vertex);
+    colorVertexDSATUR(p.vertex, 0, nodes);
+    coloring_rank.push_back(p.vertex);
 
     while(! nodes.empty()) {
 
@@ -104,12 +104,12 @@ tuple<short, vector<short>, vector<short> > Graph::dsatur() {
 
         nColor = max(nColor, (short) (use + 1));
 
-        colorVertexDSATUR(current.vertex, use, nodes, colored);
+        colorVertexDSATUR(current.vertex, use, nodes);
 
-        rank.push_back(current.vertex);
+        coloring_rank.push_back(current.vertex);
     }
 
-    return make_tuple(nColor, rank, colored);
+    return nColor;
 }
 
 ostream& operator<<(ostream& out, const TNode& node) {
@@ -127,12 +127,11 @@ inline bool operator<(const TNode& lhs,
 }
 
 
-bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes
-                       , vector< short >& colored) {
-    colored[vertex] = color;
+bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes) {
+    colored_[vertex] = color;
 
     for (auto& adj : this->getAdjacents(vertex)) {
-        if (colored[adj] == -1 && !usable[adj].test(color)) {
+        if (colored_[adj] == -1 && !usable[adj].test(color)) {
 
             usable[adj].set(color);
 
@@ -145,8 +144,38 @@ bool Graph::colorVertexDSATUR(short vertex, short color, vector< TNode >& nodes
     return true;
 }
 
-void clear() {
+bool Graph::colorVertex(short vertex, short color) {
+    colored_[vertex] = color; 
+    for (auto& adj : this->getAdjacents(vertex)) {
+        if (usable[adj].test(color)) {
+            usable[adj].set(color, 0);
+        }
+    }
+
+    return true;
+}
+
+pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
+    short preventions = 0, blockings = 0; 
+    for (auto adj : this->getAdjacents(vertex)) {
+
+        if (usable[adj].test(color)) {
+            ++preventions;
+            if (usable[adj].count() == 1) {
+                ++blockings; 
+            }
+        }
+    }
+    return make_pair(preventions, blockings); 
+}
+
+void clearUsable() {
     for (auto& u : usable) { u.reset(); }
+}
+
+void clear() {
+    clearUsable(); 
+    coloring_rank.clear(); 
 }
 
 TNode popMax(vector< TNode >& nodes) {
@@ -175,6 +204,6 @@ TNode createTNode(short vertex,short dsat,short degree) {
     n.vertex = vertex;
     n.dsat   = dsat;
     n.degree = degree;
-    
+
     return n; 
 }

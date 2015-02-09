@@ -70,6 +70,24 @@ TEST_F(GraphTest, LoadGraph) {
 
 }
 
+TEST_F(GraphTest, ColorVertex) {
+    graph.colorVertex(0,0); 
+    graph.colorVertex(7, 1); 
+
+    EXPECT_FALSE(usable[1].test(0));
+    EXPECT_FALSE(usable[1].test(1));
+    EXPECT_FALSE(usable[2].test(0));
+    EXPECT_FALSE(usable[3].test(1));
+    EXPECT_FALSE(usable[5].test(1));
+
+    EXPECT_EQ(0,graph.colored_[0]);
+    EXPECT_EQ(1,graph.colored_[7]);
+}
+
+TEST_F(GraphTest, DISABLED_BlockingsAndPrevention) {
+    bestSolution = graph.dsatur(); 
+}
+
 TEST(Graph, Adjacents) {
     Graph graph(3);
     graph.addEdge(0,1);
@@ -86,9 +104,9 @@ TEST(Graph, ColorVertexDSATUR_3V2E) {
     graph.addEdge(0,2);
 
     vector< TNode > nodes;
-    vector< short > colored(graph.nVertex, -1);
+    vector< short > colored(graph.nVertex_, -1);
 
-    for (int i = 0; i < graph.nVertex; ++i) {
+    for (int i = 0; i < graph.nVertex_; ++i) {
         TNode n;
         n.degree = graph.adjacentsList[i].size();
         n.dsat = 0;
@@ -96,7 +114,7 @@ TEST(Graph, ColorVertexDSATUR_3V2E) {
         nodes.push_back(n);
     }
 
-    graph.colorVertexDSATUR(0, 0, nodes, colored);
+    graph.colorVertexDSATUR(0, 0, nodes);
 
     vector< TNode > result;
     result.push_back(createTNode(0,0,2));
@@ -115,9 +133,9 @@ TEST(Graph, ColorVertexDSATUR_4V5E) {
 
     clear(); 
     vector< TNode > nodes;
-    vector< short > colored(graph.nVertex, -1);
+    vector< short > colored(graph.nVertex_, -1);
 
-    for (int i = 0; i < graph.nVertex; ++i) {
+    for (int i = 0; i < graph.nVertex_; ++i) {
         TNode n;
         n.degree = graph.adjacentsList[i].size();
         n.dsat = 0;
@@ -125,7 +143,7 @@ TEST(Graph, ColorVertexDSATUR_4V5E) {
         nodes.push_back(n);
     }
 
-    graph.colorVertexDSATUR(1, 0, nodes, colored);
+    graph.colorVertexDSATUR(1, 0, nodes);
 
     vector< TNode > result;
 
@@ -144,11 +162,11 @@ TEST(Graph, DSATUR_2V1E) {
 
     clear(); 
 
-    vector< short > rank = {0, 1};
-    const tuple< short, vector<short>, vector<short> >& dummy = graph.dsatur();
+    vector< short > result = {0, 1};
+    short dummy = graph.dsatur();
 
-    EXPECT_EQ(2, get<0>(dummy));
-    EXPECT_EQ(rank, get<1>(dummy));
+    EXPECT_EQ(2, dummy);
+    EXPECT_EQ(result, coloring_rank);
 }
 
 TEST(Graph, DSATUR_3V2E) {
@@ -158,11 +176,11 @@ TEST(Graph, DSATUR_3V2E) {
 
     clear(); 
 
-    vector< short > rank = {0, 1, 2};
-    const tuple< short, vector<short>, vector<short> >& dummy = graph.dsatur();
+    vector< short > result = {0, 1, 2};
+    short dummy = graph.dsatur();
 
-    EXPECT_EQ(2, get<0>(dummy));
-    EXPECT_EQ(rank, get<1>(dummy));
+    EXPECT_EQ(2, dummy);
+    EXPECT_EQ(result, coloring_rank);
 }
 
 TEST(Graph, DSATUR_2V0E) {
@@ -170,11 +188,11 @@ TEST(Graph, DSATUR_2V0E) {
 
     clear(); 
 
-    vector< short > rank = {0, 1};
-    const tuple< short, vector<short>, vector<short> >& dummy = graph.dsatur();
+    vector< short > result = {0, 1};
+    short dummy = graph.dsatur();
 
-    EXPECT_EQ(1, get<0>(dummy));
-    EXPECT_EQ(rank, get<1>(dummy));
+    EXPECT_EQ(1, dummy);
+    EXPECT_EQ(result, coloring_rank);
 }
 
 TEST(Graph, DSATUR_4V5E) {
@@ -187,13 +205,13 @@ TEST(Graph, DSATUR_4V5E) {
 
     clear(); 
 
-    vector< short > rank = {1, 2, 0, 3};
+    vector< short > result = {1, 2, 0, 3};
     vector< short > colored = {2, 0, 1, 2};
-    const tuple< short, vector<short>, vector<short> >& dummy = graph.dsatur();
+    short dummy = graph.dsatur();
 
-    EXPECT_EQ(3, get<0>(dummy));
-    EXPECT_EQ(rank, get<1>(dummy));
-    EXPECT_EQ(colored, get<2>(dummy));
+    EXPECT_EQ(3, dummy);
+    EXPECT_EQ(result, coloring_rank);
+    EXPECT_EQ(colored, graph.colored_);
 }
 
 int main(int argc, char **argv) {
