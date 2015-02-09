@@ -6,9 +6,12 @@
 #include <array>
 #include <bitset>
 
-extern std::bitset<10000> usable[10000];        // Usable color, given a node
-extern std::vector< short > coloring_rank;               // Colored coloring_ranks
-extern short bestSolution;                      // Upper bound to branch and bound
+extern std::bitset<10000> usable[10000];
+extern std::vector< short > coloring_rank;
+extern short bestSolution; 
+extern short lastNColor;
+extern short cliqueSize;
+
 typedef struct {
     short degree, dsat, vertex;
 } TNode;
@@ -31,6 +34,9 @@ public:
     bool colorVertexDSATUR(short vertex, short color, std::vector< TNode >& nodes);
     bool colorVertex(short vertex, short color); 
     std::pair<short,short> getBlockingsAndPreventions(short vertex, short color); 
+    void determineUsables(short vertex); 
+    void determineCliqueSize(); 
+    void clear(); 
 
 
     std::array< std::vector< short >, 10000 > adjacentsList;

@@ -84,9 +84,97 @@ TEST_F(GraphTest, ColorVertex) {
     EXPECT_EQ(1,graph.colored_[7]);
 }
 
-TEST_F(GraphTest, DISABLED_BlockingsAndPrevention) {
-    bestSolution = graph.dsatur(); 
+TEST_F(GraphTest, BlockingsAndPrevention) {
+    // 2 prevention (for vertex 1 and vertex 0)
+    // 1 blocking (for vertex 0)
+    clear(); 
+
+    usable[0].set(0); 
+    usable[1].set(0); 
+    usable[1].set(1); 
+    usable[3].set(1); 
+
+    const pair<short, short>& bp = graph.getBlockingsAndPreventions(2,0); 
+
+    EXPECT_EQ(bp.first, 2);
+    EXPECT_EQ(bp.second, 1);
 }
+
+TEST_F(GraphTest, DetermineUsable) {
+    // Determine usables of vertex 3
+    // Surrounded by:
+    // 1 with color 0
+    // 2 with color 1
+    // 5 with color 0
+    // 7 with color 1
+    // 8 with color 1
+    // lastNColor = 2
+    // bestSolution = 6
+    clear(); 
+    graph.clear(); 
+
+    graph.colored_[1] = 0; 
+    graph.colored_[2] = 1; 
+    graph.colored_[5] = 0; 
+    graph.colored_[7] = 1; 
+    graph.colored_[8] = 1; 
+
+    lastNColor = 2;
+    bestSolution = 6; 
+
+    graph.determineUsables(3); 
+
+    bitset<3> result(string("100")); 
+
+    EXPECT_EQ(result.to_ulong(), usable[3].to_ulong()); 
+}
+
+TEST_F(GraphTest, DetermineUsable_All) {
+    // Determine usables of vertex 3
+    // lastNColor = 2
+    // bestSolution = 6
+    clear(); 
+    graph.clear(); 
+
+    lastNColor = 2;
+    bestSolution = 6; 
+
+    graph.determineUsables(3); 
+
+    bitset<3> result(string("111")); 
+
+    EXPECT_EQ(result.to_ulong(), usable[3].to_ulong()); 
+}
+
+TEST_F(GraphTest, DetermineUsable_None) {
+    // Determine usables of vertex 3
+    // Surrounded by:
+    // 1 with color 0
+    // 2 with color 0
+    // 5 with color 0
+    // 7 with color 0
+    // 8 with color 0
+    // lastNColor = 2
+    // bestSolution = 2
+    clear(); 
+    graph.clear(); 
+
+    graph.colored_[1] = 0; 
+    graph.colored_[2] = 0; 
+    graph.colored_[5] = 0; 
+    graph.colored_[7] = 0; 
+    graph.colored_[8] = 0; 
+
+    lastNColor = 2;
+    bestSolution = 2; 
+
+    graph.determineUsables(3); 
+
+    bitset<3> result(string("000")); 
+
+    EXPECT_EQ(result.to_ulong(), usable[3].to_ulong()); 
+}
+
 
 TEST(Graph, Adjacents) {
     Graph graph(3);
@@ -213,6 +301,30 @@ TEST(Graph, DSATUR_4V5E) {
     EXPECT_EQ(result, coloring_rank);
     EXPECT_EQ(colored, graph.colored_);
 }
+
+TEST_F(GraphTest, DSATUR_test) {
+    graph.clear(); 
+    short dummy = graph.dsatur(); 
+
+
+    const vector< short > result  = {1, 3, 2, 7, 5, 8, 6, 0, 4};
+    const vector< short > colored = {1, 0, 2, 1, 0, 0, 1, 2, 2};
+
+    EXPECT_EQ(3, dummy);
+    EXPECT_EQ(result, coloring_rank);
+    EXPECT_EQ(colored, graph.colored_);
+
+}
+
+TEST_F(GraphTest, DetermineCliqueSize) {
+    graph.clear(); 
+    graph.dsatur(); 
+
+    graph.determineCliqueSize(); 
+    EXPECT_EQ(3, cliqueSize); 
+}
+
+
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

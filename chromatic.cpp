@@ -10,13 +10,13 @@ using namespace std;
 
 bitset<10000> usable[10000];        // Usable color, given a node
 vector< short > coloring_rank;      // Colored coloring_ranks
-bitset<10000> clique;               // Clique returned by the algorithm ran before
 short cliqueSize;
 bitset<10000> labels[10000];        // Labels on each node
 
 short partialSolution[10000];
 short currentNColors;
 short bestSolution = 10000;
+short lastNColor; 
 
 TNode popMax(vector< TNode >& nodes);
 void clearUsable();
@@ -55,6 +55,10 @@ void buildGraph(istringstream& input, Graph& graph) {
 Graph::Graph(short nVertex) {
     nVertex_ = nVertex;
     colored_ = vector< short >(nVertex, -1); 
+}
+
+void Graph::clear() {
+    fill(colored_.begin(), colored_.end(), -1);
 }
 
 void Graph::addEdge(short first, short second) {
@@ -112,6 +116,12 @@ short Graph::dsatur() {
     return nColor;
 }
 
+void Graph::determineCliqueSize() {
+    cliqueSize = 1; 
+    while(cliqueSize == colored_[coloring_rank[cliqueSize]]) { ++cliqueSize; }
+}
+
+
 ostream& operator<<(ostream& out, const TNode& node) {
     out << "<" << node.vertex << ", " << node.dsat << ", " << node.degree << ">"; 
     return out; 
@@ -157,7 +167,7 @@ bool Graph::colorVertex(short vertex, short color) {
 
 pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
     short preventions = 0, blockings = 0; 
-    for (auto adj : this->getAdjacents(vertex)) {
+    for (auto& adj : this->getAdjacents(vertex)) {
 
         if (usable[adj].test(color)) {
             ++preventions;
@@ -168,6 +178,23 @@ pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
     }
     return make_pair(preventions, blockings); 
 }
+
+void Graph::determineUsables(short vertex) {
+    short nColor = min(bestSolution - 1, lastNColor + 1);
+
+    // TODO: Can be improved to bitwise operations
+    for (int i = 0; i < nColor; ++i) {
+        usable[vertex].set(i); 
+    }
+
+    for (auto& adj: this->getAdjacents(vertex)) {
+        short color = colored_[adj]; 
+        if (color != -1) {
+            usable[vertex].reset(color); 
+        }
+    }
+}
+
 
 void clearUsable() {
     for (auto& u : usable) { u.reset(); }
