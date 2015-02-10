@@ -50,6 +50,8 @@ public:
     void removeOwnColor(short vertex); 
     // Gets the color with the less of blockings and preventions
     std::pair<short, bool> getBestColor(short vertex); 
+    // TODO
+    short getMinColor(short vertex);
     // Remove the labels from the first bestSolution-colored vertex and return said vertex
     short findBestSolutionAndRemoveLabels(); 
     // Labels the coloring_rank[current] according to the paper's constraints

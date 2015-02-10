@@ -254,6 +254,17 @@ pair<short, bool> Graph::getBestColor(short vertex) {
     return make_pair(color, min.second > 0); 
 }
 
+short Graph::getMinColor(short vertex) {
+    for (int i = 0; i < bestSolution - 1; ++i) {
+        // cout << "afuera " << i << " <" << pb.second << "," << pb.first << ">" << endl;
+        if (usable[vertex].test(i))  {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void Graph::label(short current) {
 
     short vertex = coloring_rank[current]; 
@@ -320,7 +331,7 @@ short Graph::determineDeepestLabeled() {
 
 
 short Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
-    bool back = false, block = false;
+    bool back = false;
 
     short current = cliqueSize;     // First vertex to check
     short vertex;
@@ -345,7 +356,9 @@ short Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
         // cout << "vertex\n"; fflush(stdout);
         blocked_adjacents.clear();
 
-        cout << bestSolution << " | " << current << " | " << usable[vertex].to_ulong() << " | " << nVertex_ << endl;
+        if (current % 7 == 0) {
+            cout << bestSolution << " | " << current << " | " << usable[vertex].to_ulong() << " | " << nVertex_ << endl;
+        }
 
         // IF not back
         if (! back) {
@@ -362,34 +375,24 @@ short Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
         // IF U(Xk) ≠ ø
         if (usable[vertex].count() > 0) {
             // cout << "entré\n"; fflush(stdout);
-            auto colorBlock = this->getBestColor(vertex);
+            short color = this->getMinColor(vertex);
+            this->colorVertex(vertex, color);
+            ++current;
 
-            // IF i is not a blocking color
-            if (! colorBlock.second) {
-                // cout << "colorBlock.second\n"; fflush(stdout);
-                // cout << "-------------color a pintar " << colorBlock.first << endl;
-                this->colorVertex(vertex, colorBlock.first);
-                ++current;
+            // IF k > n
+            if (current > nVertex_ - 1) {
+                bestSolution = lastNColor[vertex];
 
-                // IF k > n
-                if (current > nVertex_ - 1) {
-                    bestSolution = lastNColor[vertex];
-
-                    // EXIT IF q = w
-                    if (bestSolution == cliqueSize) {
-                        cout << "best2: ";
-                        return bestSolution;
-                    }
-
-                    current = this->findBestSolutionAndRemoveLabels();
-                    back = true;
-                } else {
-                    back = false;
+                // EXIT IF q = w
+                if (bestSolution == cliqueSize) {
+                    cout << "best2: ";
+                    return bestSolution;
                 }
-            } else {
-                // cout << "colorBlock.second else\n"; fflush(stdout);
+
+                current = this->findBestSolutionAndRemoveLabels();
                 back = true;
-                block = true;
+            } else {
+                back = false;
             }
         } else {
             back = true;
@@ -397,16 +400,6 @@ short Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
 
         // IF back
         if (back) {
-            // IF block
-            if (block) {
-                while (!blocked_adjacents.empty()) {
-                    short adj = blocked_adjacents.back();
-                    blocked_adjacents.pop_back();
-                    label(vertex_rank[adj]);
-                }
-                block = false;
-            }
-
             // cout << "out-block\n"; fflush(stdout);
             this->label(current);
             // cout << "label-current\n"; fflush(stdout);
