@@ -1,2 +1,2 @@
-# graph_coloring_bb
+# Chromatic
 Graph coloring using branch and bound.
