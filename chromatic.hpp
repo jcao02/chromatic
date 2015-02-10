@@ -6,12 +6,15 @@
 #include <array>
 #include <bitset>
 
-extern std::bitset<10000> usable[10000];
-extern std::bitset<10000> labels; 
+#define MAX_NVERTEX 10000
+
+extern std::bitset<MAX_NVERTEX> usable[MAX_NVERTEX];
+extern std::bitset<MAX_NVERTEX> labels; 
 extern std::vector< short > coloring_rank;
 extern short bestSolution; 
-extern std::vector< short > lastNColor;
+extern short lastNColor[MAX_NVERTEX];
 extern short cliqueSize;
+extern short vertex_rank[MAX_NVERTEX];
 
 typedef struct {
     short degree, dsat, vertex;
@@ -46,14 +49,14 @@ public:
     // Removes the current color of the vertex from usables for that vertex
     void removeOwnColor(short vertex); 
     // Gets the color with the less of blockings and preventions
-    short getBestColor(short vertex); 
+    std::pair<short, bool> getBestColor(short vertex); 
     // Remove the labels from the first bestSolution-colored vertex and return said vertex
     short findBestSolutionAndRemoveLabels(); 
     // Labels the coloring_rank[current] according to the paper's constraints
     void label(short current); 
     // Determine the right-est vertex among the labeled vertices
     short determineDeepestLabeled(); 
-    void ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm(); 
+    short ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm(); 
     
 
     // Functions for DSATUR
@@ -65,12 +68,12 @@ public:
     void determineCliqueSize(); 
 
 
-    std::array< std::vector< short >, 10000 > adjacentsList;
+    std::array< std::vector< short >, MAX_NVERTEX > adjacentsList;
     short nVertex_;
     std::vector< short > colored_;
 };
 
-std::istringstream *filterComments(std::istringstream& input);
+std::istringstream *filterComments(std::istream& input);
 void buildGraph(std::istringstream& input, Graph& graph);
 void clear(); 
 #endif

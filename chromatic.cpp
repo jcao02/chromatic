@@ -1,6 +1,6 @@
 #include <algorithm>                // sort, max
 #include <sstream>                  // istringstream
-#include <iostream>                 // cout
+#include <iostream>                 // cin, cout
 #include <string>                   // string
 #include <new>                      // bad_alloc
 #include <queue>                    // queue
@@ -8,20 +8,39 @@
 
 using namespace std;
 
-bitset<10000> usable[10000];        // Usable color, given a node
-vector< short > coloring_rank;      // Colored coloring_ranks
+bitset<MAX_NVERTEX> usable[MAX_NVERTEX];        // Usable color, given a node
+vector< short > coloring_rank;                  // Colored coloring_rank
 short cliqueSize;
-bitset<10000> labels;               // Labels on each node
+bitset<MAX_NVERTEX> labels;                     // Labels on each node
 
-short partialSolution[10000];
-short currentNColors;
-short bestSolution = 10000;
-vector< short > lastNColor(10000, 0); 
+vector< short > blocked_adjacents;              // Adjacent vertices that would be blocked
+
+short vertex_rank[MAX_NVERTEX];                 // Reference from vertex position to rank position
+
+short lastNColor[MAX_NVERTEX];
+short bestSolution = MAX_NVERTEX;
 
 TNode popMax(vector< TNode >& nodes);
 void clearUsable();
 
-istringstream *filterComments(istringstream& input) {
+int main() {
+    Graph graph;
+
+    buildGraph(*filterComments(cin), graph);
+
+    bestSolution = graph.dsatur();
+    graph.determineCliqueSize(); 
+
+    cout << "dsatur: " << bestSolution << endl;
+    cout << "clique: " << cliqueSize << endl;
+    cout << graph.ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm(); 
+    cout << endl;
+
+    return 0;
+}
+
+
+istringstream *filterComments(istream& input) {
     string line, result_str;
     while(getline(input, line)) {
         if (line[0] != 'c') {
@@ -80,7 +99,6 @@ short Graph::dsatur() {
     vector< TNode > nodes;
     short nColor = 1;
 
-
     coloring_rank.reserve(nVertex_);
     nodes.reserve(nVertex_);
 
@@ -96,6 +114,7 @@ short Graph::dsatur() {
     const TNode& p = popMax(nodes); 
 
     colorVertexDSATUR(p.vertex, 0, nodes);
+    vertex_rank[p.vertex] = coloring_rank.size();
     coloring_rank.push_back(p.vertex);
 
     while(! nodes.empty()) {
@@ -110,6 +129,7 @@ short Graph::dsatur() {
 
         colorVertexDSATUR(current.vertex, use, nodes);
 
+        vertex_rank[current.vertex] = coloring_rank.size();
         coloring_rank.push_back(current.vertex);
     }
 
@@ -165,7 +185,6 @@ bool Graph::colorVertex(short vertex, short color) {
     return true;
 }
 
-// TODO: need to return blocked currents (try to make it k-indexed)
 pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
     short preventions = 0, blockings = 0; 
     for (auto adj : this->getAdjacents(vertex)) {
@@ -174,6 +193,7 @@ pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
             ++preventions;
             if (usable[adj].count() == 1) {
                 ++blockings; 
+                blocked_adjacents.push_back(adj);
             }
         }
     }
@@ -183,8 +203,19 @@ pair<short,short> Graph::getBlockingsAndPreventions(short vertex, short color) {
 void Graph::determineUsables(short current) {
     short vertex = coloring_rank[current];
     short lastVertex = coloring_rank[current - 1]; 
-    short nColor = min(bestSolution - 1, lastNColor[lastVertex] + 1);
 
+    lastNColor[vertex] = lastNColor[lastVertex];
+
+    if (colored_[lastVertex] >= lastNColor[lastVertex]) {
+        ++lastNColor[vertex];
+    }
+
+    // cout << "color[lastVertex]: " << colored_[lastVertex] << " | lastVertex: " << lastVertex << " | vertex " << vertex << " | lastNColor: " << lastNColor[lastVertex] << endl;
+
+    short nColor = min(bestSolution - 1, lastNColor[vertex] + 1);
+
+
+    usable[vertex].reset(); 
     // TODO: Can be improved to bitwise operations
     for (int i = 0; i < nColor; ++i) {
         usable[vertex].set(i); 
@@ -198,30 +229,31 @@ void Graph::determineUsables(short current) {
     }
 }
 
-
-// TODO : -> 
-// Removes the current color of the vertex from usables for that vertex
 void Graph::removeOwnColor(short vertex) {
     short color = colored_[vertex]; 
-    usable[vertex].reset(color); 
+    // cout << "in-remove " << vertex << " | " << color << endl; fflush(stdout);
+    if (color >= 0) {
+        usable[vertex].reset(color); 
+    }
 }
-// Gets the color with the less of blockings and preventions
-short Graph::getBestColor(short vertex) {
-    pair<short, short> min(10000, 10000); 
-    short color = -1; 
+
+pair<short, bool> Graph::getBestColor(short vertex) {
+    pair<short, short> min(MAX_NVERTEX, MAX_NVERTEX); 
+    short color = -1;
 
     for (int i = 0; i < bestSolution - 1; ++i) {
-        const pair<short, short>& pb =  this->getBlockingsAndPreventions(vertex, i); 
-        if ((pb.second < min.second) || 
-                (pb.second == min.second && pb.first < min.first))  {
+        const pair<short, short>& pb = this->getBlockingsAndPreventions(vertex, i); 
+        // cout << "afuera " << i << " <" << pb.second << "," << pb.first << ">" << endl;
+        if (usable[vertex].test(i) && (pb.second < min.second || 
+                (pb.second == min.second && pb.first < min.first)))  {
             min   = pb; 
             color = i; 
         }
     }
 
-    return color; 
+    return make_pair(color, min.second > 0); 
 }
-// Labels the coloring_rank[current] according to the paper's constraints
+
 void Graph::label(short current) {
 
     short vertex = coloring_rank[current]; 
@@ -229,10 +261,9 @@ void Graph::label(short current) {
 
     for (auto adj : adjs) {
 
-        auto it = find(coloring_rank.begin(), coloring_rank.begin() + current, adj);
-        if (it != coloring_rank.begin() + current) {
-            auto pos = distance(coloring_rank.begin(), it); 
+        short pos = vertex_rank[adj];
 
+        if (pos < current) {
             short color = colored_[adj]; 
             bool wasFirst = true; 
             for (; wasFirst && pos >= 0; --pos) {
@@ -249,6 +280,7 @@ void Graph::label(short current) {
         }
     }
 }
+
 short Graph::findBestSolutionAndRemoveLabels() {
 
     short pos = 0; 
@@ -271,7 +303,7 @@ short Graph::findBestSolutionAndRemoveLabels() {
 
     return pos; 
 }
-// Determine the right-est vertex among the labeled vertices
+
 short Graph::determineDeepestLabeled() {
     short pos = nVertex_ - 1; 
 
@@ -287,8 +319,107 @@ short Graph::determineDeepestLabeled() {
 }
 
 
-void Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
+short Graph::ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm() {
+    bool back = false, block = false;
 
+    short current = cliqueSize;     // First vertex to check
+    short vertex;
+
+    if (cliqueSize == bestSolution) {
+        cout << "best1: ";
+        return bestSolution;
+    }
+
+    // Update all the clique vertices before starting
+    for (short i = 0; i < cliqueSize; ++i) {
+        vertex = coloring_rank[i];
+        // colored_[vertex] = i;
+        labels.set(vertex);
+        lastNColor[vertex] = i;
+    }
+
+    // DO FOREVER
+    while (true) {
+        // cout << "while\n"; fflush(stdout);
+        vertex = coloring_rank[current];
+        // cout << "vertex\n"; fflush(stdout);
+        blocked_adjacents.clear();
+
+        cout << bestSolution << " | " << current << " | " << usable[vertex].to_ulong() << " | " << nVertex_ << endl;
+
+        // IF not back
+        if (! back) {
+            // cout << "first-back\n"; fflush(stdout);
+            this->determineUsables(current);
+        } else {
+            // cout << "first-back else\n"; fflush(stdout);
+            this->removeOwnColor(vertex);
+            // cout << "removeOwn\n"; fflush(stdout);
+            labels.reset(vertex);
+        }
+
+        // cout << "vertex " << vertex << endl; fflush(stdout);
+        // IF U(Xk) ≠ ø
+        if (usable[vertex].count() > 0) {
+            // cout << "entré\n"; fflush(stdout);
+            auto colorBlock = this->getBestColor(vertex);
+
+            // IF i is not a blocking color
+            if (! colorBlock.second) {
+                // cout << "colorBlock.second\n"; fflush(stdout);
+                // cout << "-------------color a pintar " << colorBlock.first << endl;
+                this->colorVertex(vertex, colorBlock.first);
+                ++current;
+
+                // IF k > n
+                if (current > nVertex_ - 1) {
+                    bestSolution = lastNColor[vertex];
+
+                    // EXIT IF q = w
+                    if (bestSolution == cliqueSize) {
+                        cout << "best2: ";
+                        return bestSolution;
+                    }
+
+                    current = this->findBestSolutionAndRemoveLabels();
+                    back = true;
+                } else {
+                    back = false;
+                }
+            } else {
+                // cout << "colorBlock.second else\n"; fflush(stdout);
+                back = true;
+                block = true;
+            }
+        } else {
+            back = true;
+        }
+
+        // IF back
+        if (back) {
+            // IF block
+            if (block) {
+                while (!blocked_adjacents.empty()) {
+                    short adj = blocked_adjacents.back();
+                    blocked_adjacents.pop_back();
+                    label(vertex_rank[adj]);
+                }
+                block = false;
+            }
+
+            // cout << "out-block\n"; fflush(stdout);
+            this->label(current);
+            // cout << "label-current\n"; fflush(stdout);
+            current = this->determineDeepestLabeled();
+            // cout << "determined\n"; fflush(stdout);
+            // cout << "new current: " << current << endl;
+
+            if (current <= cliqueSize - 1) {
+                cout << "best3: ";
+                return bestSolution;
+            }
+        }
+    }
 }
 
 
@@ -300,6 +431,7 @@ void clear() {
     clearUsable(); 
     coloring_rank.clear(); 
     labels.reset(); 
+    memset(vertex_rank, 0, sizeof(short) * MAX_NVERTEX);
 }
 
 TNode popMax(vector< TNode >& nodes) {

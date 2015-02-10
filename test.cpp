@@ -304,11 +304,14 @@ TEST_F(GraphTest, DSATUR_test) {
 
     const vector< short > result  = {1, 3, 2, 7, 5, 8, 6, 0, 4};
     const vector< short > colored = {1, 0, 2, 1, 0, 0, 1, 2, 2};
+    const short references[] = {7, 0, 2, 1, 8, 4, 6, 3, 5};
 
     EXPECT_EQ(3, dummy);
     EXPECT_EQ(result, coloring_rank);
     EXPECT_EQ(colored, graph.colored_);
-
+    for (int i = 0; i < 9; ++i) {
+        EXPECT_EQ(references[i], vertex_rank[i]);
+    }
 }
 
 TEST_F(GraphTest, DetermineCliqueSize) {
@@ -328,6 +331,10 @@ TEST_F(GraphTest, LabelVerticesAll) {
 
     graph.colored_ = { -1, 0, 1 };
 
+    vertex_rank[0] = 2;
+    vertex_rank[1] = 0;
+    vertex_rank[2] = 1;
+
     graph.label(2);  // Labeling vertex 0
 
     EXPECT_TRUE(labels.test(1));
@@ -346,6 +353,10 @@ TEST_F(GraphTest, LabelVerticesSome) {
 
     graph.colored_ = {-1, 0, 0};
 
+    vertex_rank[0] = 2;
+    vertex_rank[1] = 0;
+    vertex_rank[2] = 1;
+
     graph.label(2);  // Labeling vertex 0
 
     EXPECT_TRUE(labels.test(1));
@@ -363,6 +374,10 @@ TEST_F(GraphTest, LabelVerticesOutOfRank) {
     coloring_rank = {1, 0, 2};
 
     graph.colored_ = {-1, 0, -1};
+
+    vertex_rank[0] = 1;
+    vertex_rank[1] = 0;
+    vertex_rank[2] = 2;
 
     graph.label(1);  // Labeling vertex 0
 
@@ -397,6 +412,30 @@ TEST_F(GraphTest, UnlabelFromBestColored) {
     EXPECT_FALSE(labels.test(1));
     EXPECT_FALSE(labels.test(4));
     EXPECT_FALSE(labels.test(5));
+}
+
+TEST_F(GraphTest, TheSmallCorrection) {
+    Graph graph(3);
+
+    graph.addEdge(0,1);
+    graph.addEdge(0,2);
+
+    bestSolution = graph.dsatur();
+    graph.determineCliqueSize(); 
+
+    short dummy = graph.ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm(); 
+
+    EXPECT_EQ(2, dummy);
+}
+
+TEST_F(GraphTest, TheCorrection) {
+
+    bestSolution = graph.dsatur();
+    graph.determineCliqueSize(); 
+
+    short dummy = graph.ACorrectionToBrelazsModificationOfBrownsColoringAlgorithm(); 
+
+    EXPECT_EQ(3, dummy);
 }
 
 int main(int argc, char **argv) {
