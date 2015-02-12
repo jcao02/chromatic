@@ -10,13 +10,13 @@ project( CHROMATIC )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-missing-field-initializers" )
 set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Werror -pedantic -g" )
 
-add_subdirectory(gtest-1.7.0) 
+# add_subdirectory(gtest-1.7.0) 
 
-include_directories (
-    "${PROJECT_BINARY_DIR}"
-    "${gtest_SOURCE_DIR}/include" 
-    "${gtest_SOURCE_DIR}"
-)
+# include_directories (
+#     "${PROJECT_BINARY_DIR}"
+#     "${gtest_SOURCE_DIR}/include" 
+#     "${gtest_SOURCE_DIR}"
+# )
 
 
 #add_library( common SHARED  ) 
@@ -25,6 +25,6 @@ add_library( common SHARED graph.cpp chromatic.cpp)
 add_executable(chromatic chromatic.cpp)
 target_link_libraries ( chromatic common ) 
 
-add_executable(test test.cpp)
-target_link_libraries(test gtest common)
-add_custom_target(run_tests test --gtest_output=xml ) 
+# add_executable(test test.cpp)
+# target_link_libraries(test gtest common)
+# add_custom_target(run_tests test --gtest_output=xml ) 

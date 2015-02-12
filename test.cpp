@@ -3,7 +3,6 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <tuple>
 #include "graph.hpp"
 #include "chromatic.hpp"
 
