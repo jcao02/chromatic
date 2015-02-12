@@ -20,12 +20,10 @@ include_directories (
 
 
 #add_library( common SHARED  ) 
-add_library( common SHARED chromatic.cpp  ) 
-
-#add_executable ( chromatic chromatic.cpp ) 
-#target_link_libraries ( chromatic common ) 
+add_library( common SHARED graph.cpp chromatic.cpp) 
 
 add_executable(chromatic chromatic.cpp)
+target_link_libraries ( chromatic common ) 
 
 add_executable(test test.cpp)
 target_link_libraries(test gtest common)
